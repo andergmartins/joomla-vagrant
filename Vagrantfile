@@ -45,6 +45,18 @@ Vagrant.configure("2") do |config|
         config.vm.synced_folder source, target, :nfs => CONF['nfs'], :create => true
       end
     }
+
+    # Store the shared paths as an environment variable on the box
+    pwd = Dir.pwd
+    pwd << '/' unless pwd.end_with?('/')
+
+    mapping = Hash[ CONF['synced_folders'].keep_if { |key, value| value.is_a? String }.each_pair.map { |key, value| [key, value.gsub(/^\.\//, pwd)] }]
+
+    json = mapping.to_json.gsub(/"/, '\\\\\\\\\"')
+    paths = 'SetEnv BOX_SHARED_PATHS \"' + json + '\"'
+    shell_cmd = '[ -d /etc/apache2/conf.d ] && { echo "' + paths + '" > /etc/apache2/conf.d/shared_paths && service apache2 restart; } || echo "Apache2 is not installed yet"'
+
+    config.vm.provision :shell, :inline => shell_cmd, :run => "always"
   end
 
   config.vm.provision :shell, :inline => "sudo apt-get update"

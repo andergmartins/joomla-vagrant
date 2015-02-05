@@ -21,7 +21,7 @@ Installation
 
 Install [VirtualBox](http://www.virtualbox.org/)
 
-Install [Vagrant](http://downloads.vagrantup.com/)
+Install [Vagrant](http://www.vagrantup.com/)
 
 Run the following commands in a folder of your choice:
 
@@ -188,7 +188,4 @@ Use following details to connect:
     Port: 2222
     User: vagrant
     Password: vagrant
-
-
-[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/joomlatools/joomla-vagrant/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
 
