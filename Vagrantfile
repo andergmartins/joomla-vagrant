@@ -1,5 +1,4 @@
 require "yaml"
-require "json"
 
 # Initialize config
 def deep_merge!(target, data)
@@ -10,15 +9,16 @@ end
 
 _config = {
     "synced_folders" => {
-        "/var/www" => File.join(Dir.pwd, "www"),
-        "/home/vagrant/Projects" => File.join(Dir.pwd, "Projects")
+        "/var/www" => "./www",
+        "/home/vagrant/Projects" => "./Projects",
+        "/home/vagrant/AllProjects" => "./AllProjects"
     },
     "nfs" => !!(RUBY_PLATFORM =~ /darwin/ || RUBY_PLATFORM =~ /linux/)
 }
 
 # Local-specific/not-git-managed config -- config.custom.yaml
 begin
-  deep_merge!(_config, YAML.load(File.open(File.join(Dir.pwd, "config.custom.yaml"), File::RDONLY).read))
+  deep_merge!(_config, YAML.load(File.open(File.join(File.dirname(__FILE__), "config.custom.yaml"), File::RDONLY).read))
 rescue Errno::ENOENT
   # No config.custom.yaml found -- that's OK; just use the defaults.
 end
@@ -31,12 +31,12 @@ Vagrant.configure("2") do |config|
   config.vm.hostname = "joomlatools.dev"
 
   config.vm.network :private_network, ip: "33.33.33.58"
-  config.ssh.forward_agent = true
+    config.ssh.forward_agent = true
 
   config.vm.provider :virtualbox do |v|
     v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
     v.customize ["modifyvm", :id, "--memory", 1024]
-    v.customize ["modifyvm", :id, "--name", "joomlatools-box-build"]
+    v.customize ["modifyvm", :id, "--name", "joomlatools-box"]
   end
 
   if CONF.has_key?('synced_folders')
@@ -45,18 +45,6 @@ Vagrant.configure("2") do |config|
         config.vm.synced_folder source, target, :nfs => CONF['nfs'], :create => true
       end
     }
-
-    # Store the shared paths as an environment variable on the box
-    pwd = Dir.pwd
-    pwd << '/' unless pwd.end_with?('/')
-
-    mapping = Hash[ CONF['synced_folders'].each_pair.map { |key, value| [key, value.gsub(/^\.\//, pwd)] }]
-
-    json = mapping.to_json.gsub(/"/, '\\\\\\\\\"')
-    paths = 'SetEnv BOX_SHARED_PATHS \"' + json + '\"'
-    shell_cmd = '[ -d /etc/apache2/conf.d ] && { echo "' + paths + '" > /etc/apache2/conf.d/shared_paths && service apache2 restart; } || echo "Apache2 is not installed yet"'
-
-    config.vm.provision :shell, :inline => shell_cmd, :run => "always"
   end
 
   config.vm.provision :shell, :inline => "sudo apt-get update"
