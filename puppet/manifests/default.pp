@@ -230,3 +230,4 @@ class { 'scripts': }
 
 class { 'phpmanager': }
 
+class { 'docker': }
